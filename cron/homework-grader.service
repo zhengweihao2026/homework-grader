@@ -1,0 +1,15 @@
+[Unit]
+Description=家庭作业自动批改系统
+After=network.target
+
+[Service]
+Type=simple
+User=agent
+WorkingDirectory=/opt/data/homework-grader
+ExecStart=/usr/bin/python3 /opt/data/homework-grader/api/main.py
+Restart=always
+RestartSec=10
+Environment="PATH=/usr/bin:/usr/local/bin:/home/agent/.venv/bin"
+
+[Install]
+WantedBy=multi-user.target

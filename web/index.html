@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭作业自动批改系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .content { padding: 40px; }
+        .upload-area { border: 3px dashed #667eea; border-radius: 12px; padding: 40px; text-align: center; margin-bottom: 30px; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { background: #f8f9ff; border-color: #764ba2; }
+        .upload-area input { display: none; }
+        .btn { display: inline-block; padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        .btn:hover { background: #764ba2; transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .result { margin-top: 30px; }
+        .item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .item.correct { border-left: 4px solid #4caf50; }
+        .item.wrong { border-left: 4px solid #f44336; }
+        .item h3 { color: #333; margin-bottom: 10px; }
+        .item p { color: #666; line-height: 1.6; }
+        .score { display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: bold; margin-top: 10px; }
+        .score.pass { background: #e8f5e9; color: #4caf50; }
+        .score.fail { background: #ffebee; color: #f44336; }
+        .encouragement { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-top: 30px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 家庭作业自动批改系统</h1>
+            <p>拍照上传数学作业，自动识别题目、判断对错、生成错题本</p>
+        </div>
+        <div class="content">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <h2>📸 点击上传作业图片</h2>
+                <p style="color: #666; margin-top: 10px;">支持 JPG, PNG 格式</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div id="result" class="result" style="display: none;">
+                <!-- 结果会在这里显示 -->
+            </div>
+            <div class="encouragement" id="encouragement" style="display: none;">
+                <p id="encourageText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api/v1';
+        
+        document.getElementById('fileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const uploadBtn = document.querySelector('.upload-area h2');
+            uploadBtn.textContent = '⏳ 正在识别中...';
+            
+            try {
+                const response = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                displayResult(data);
+            } catch (error) {
+                alert('上传失败：' + error.message);
+            } finally {
+                uploadBtn.textContent = '📸 点击上传作业图片';
+            }
+        });
+        
+        function displayResult(record) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            
+            let html = `<div class="item ${record.items[0].is_correct ? 'correct' : 'wrong'}">
+                <h3>题目</h3>
+                <p>${record.items[0].question_text}</p>
+                <p><strong>学生作答：</strong>${record.items[0].student_answer}</p>
+                <p><strong>判断结果：</strong>${record.items[0].is_correct ? '✅ 正确' : '❌ 错误'}</p>
+                <p><strong>得分：</strong>${record.overall_score}%</p>
+            </div>`;
+            
+            resultDiv.innerHTML = html;
+            
+            document.getElementById('encourageText').textContent = 
+                record.items[0].is_correct 
+                    ? '太棒了！这道题你完全做对了 🌟 继续加油，你越来越棒！'
+                    : '别灰心！这道题是我们进步的机会 💪 错题不是敌人，而是帮你变强的秘密武器。明天继续加油！';
+            
+            document.getElementById('encouragement').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
